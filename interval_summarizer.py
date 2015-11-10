@@ -56,6 +56,9 @@ class TsSummarizer(object):
         """The interval summaries are joined."""
         return '\n'.join(self.summarize(messages))
 
+    def set_interval(self, ispecs):
+        self.intervals = map(lambda ispec: IntervalSpec(**ispec), ispecs)
+
     def summarize_segment(self, msg_seg):
         """Call the summarizer that is used."""
         return msg_seg

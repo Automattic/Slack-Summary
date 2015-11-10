@@ -1,15 +1,19 @@
 import unittest
 import json
 import io
-#from sp_summarizer import (SpacyTsSummarizer)
-from ts_summarizer import (TextRankTsSummarizer)
+import config
+from ts_config import SUMMS
 from interval_summarizer import (IntervalSpec, TsSummarizer, tagged_sum,
                                  ts_to_time)
 from datetime import datetime
 import logging
 import sys
-import config
 from ts_config import DEBUG
+if "spacy" in SUMMS:
+    from sp_summarizer import (SpacyTsSummarizer)
+    import lsa
+if "gensim" in SUMMS:
+    from ts_summarizer import (TextRankTsSummarizer)
 
 logger = logging.getLogger()
 logger.level = logging.DEBUG if DEBUG else logging.INFO
@@ -39,18 +43,33 @@ class TestSummarize(unittest.TestCase):
         logger.debug("First entry should be %s is %s", TestSummarize.test_msgs[4:], msgs[0][1][::-1])
         self.assertTrue(msgs[0][1][::-1] == TestSummarize.test_msgs[4:])
 
-    def test_text_rank_summarization(self):
-        """Pass the intervals to Gensim TextRank"""
-        asd = [{'minutes': 60, 'size' : 2, 'txt' : u'Summary for first 60 minutes:\n'}, {'hours':12, 'size' : 1, 'txt' : u'Summary for last 12 hours:\n'}]
-        #summ = SpacyTsSummarizer(asd)
-        summ = TextRankTsSummarizer(asd)
-        sumry = summ.summarize(TestSummarize.test_msgs)
-        logger.debug("Summary is %s", sumry)
-        self.assertTrue(len(sumry) == 2)
+    def test_gensim_summarization(self):
+        """Pass the intervals to summarizer"""
+        if "gensim" in SUMMS:
+            asd = [{'minutes': 60, 'size' : 2, 'txt' : u'Summary for first 60 minutes:\n'}, {'hours':12, 'size' : 1, 'txt' : u'Summary for last 12 hours:\n'}]
+            summ = None
+            summ = TextRankTsSummarizer(asd)
+            logger.debug("Testing gensim summarizer")
+            sumry = summ.summarize(TestSummarize.test_msgs)
+            logger.debug("Summary is %s", sumry)
+            self.assertTrue(len(sumry) == 2)
+        else:
+            pass
 
-    def test_service_ingest(self):
-        """Stand up the endpoint, send some events via requests"""
-        pass
+    def test_spacy_summarization(self):
+        """Pass the intervals to summarizer"""
+        if "spacy" in SUMMS:
+            asd = [{'minutes': 60, 'size' : 2, 'txt' : u'Summary for first 60 minutes:\n'}, {'hours':12, 'size' : 1, 'txt' : u'Summary for last 12 hours:\n'}]
+            summ = None
+            lsa_summ = lsa.LsaSummarizer()
+            summ = SpacyTsSummarizer(asd)
+            summ.set_summarizer(lsa_summ)
+            logger.debug("Testing spacy summarizer")
+            sumry = summ.summarize(TestSummarize.test_msgs)
+            logger.debug("Summary is %s", sumry)
+            self.assertTrue(len(sumry) == 2)
+        else:
+            pass
 
 if __name__ == '__main__':
     unittest.main()

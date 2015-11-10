@@ -1,7 +1,6 @@
 import unittest
 import json
 import io
-#from sp_summarizer import (SpacyTsSummarizer)
 from ts_summarizer import (TextRankTsSummarizer)
 from interval_summarizer import (IntervalSpec, TsSummarizer, tagged_sum,
                                  ts_to_time)
@@ -11,7 +10,6 @@ import sys
 import config
 from ts_config import DEBUG
 from hypothesis import given
-#import hypothesis.strategies as st
 from hypothesis.strategies import (sampled_from, lists, just, integers)
 import glob
 import random
@@ -28,10 +26,6 @@ def read_dir(fdir):
     return coll
 
 test_json_msgs_c3 = [read_dir(fdir) for fdir in ['api-test',  'calypso',  'games',  'happiness',  'hg',  'jetpack',  'jetpackfuel',  'livechat',  'tickets',  'vip']]
-
-# for dirs in ['api-test',  'calypso',  'games',  'happiness',  'hg',  'jetpack',  'jetpackfuel',  'livechat',  'tickets',  'vip']:
-#     for jfile in glob.glob('./data/slack-logs-2/{}/*.json'.format(dirs)):
-#         test_json_msgs_c3 += json.load(io.open(jfile, encoding='utf-8'))
 
 print len(test_json_msgs_c3)
 

@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
-from sp_summarizer import SpacyTsSummarizer
-#from ts_summarizer import TextRankTsSummarizer
 import requests
 import json
 from config import *
-from ts_config import DEBUG, LOG_FILE, SUMMARY_INTERVALS, TEST_JSON
+from ts_config import DEBUG, LOG_FILE, SUMMARY_INTERVALS, TEST_JSON, SUMMS
 from slacker import Slacker
 import slacker
 import logging
 import uuid
 import re
 import io
+if "gensim" in SUMMS:
+    from ts_summarizer import TextRankTsSummarizer
+if "spacy" in SUMMS:
+    from sp_summarizer import SpacyTsSummarizer
 
 class SlackRouter(object):
     expr = re.compile(r'-?(\d{1,3}?)\s+(\S{1,8})\s*(.*)$')
@@ -51,12 +53,20 @@ class SlackRouter(object):
             response =  self.get_response(channel_id)
 	    msgs = (response.body)
             msgs = msgs[u'messages'] if u'messages' in msgs else msgs
-        summ = args['summ']
-        #summ_sp = TextRankTsSummarizer(self.build_interval(params))
-        summ_sp = SpacyTsSummarizer(self.build_interval(params))
-        if summ:
-            summ_sp.set_summarizer(summ)
-        summary = summ_sp.report_summary(msgs)
+        summ_object = args['summ']
+        summ_impl = None
+        summary = u''
+        if summ_object and "spacy" in SUMMS:
+            self.logger.info(u'Using spacy')
+            summ_impl = SpacyTsSummarizer(self.build_interval(params))
+            summ_impl.set_summarizer(summ_object)
+        elif "gensim" in SUMMS:
+            self.logger.info(u'Using gensim')
+            summ_impl = TextRankTsSummarizer(self.build_interval(params))
+        if summ_impl:
+            summary = summ_impl.report_summary(msgs)
+        else:
+            self.logger.warn(u'No summarizer was set!')
         self.logger.info(u'Summary request %s user_id: %s', request_id, user_id)
         self.logger.info(u'Summary request %s channel_name: %s', request_id, channel_name)
         self.logger.info(u'Summary request %s parameters: %s', request_id, params)
