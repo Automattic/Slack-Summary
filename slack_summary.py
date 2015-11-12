@@ -6,6 +6,7 @@ from ts_config import DEBUG, LOG_FILE, SUMMARY_INTERVALS, TEST_JSON, SUMMS
 from slacker import Slacker
 import slacker
 import logging
+import logging.handlers
 import uuid
 import re
 import io
@@ -25,7 +26,7 @@ class SlackRouter(object):
         self.slack = None if self.test else slacker.Slacker(keys["slack"])
         log_level = logging.DEBUG if DEBUG else logging.INFO
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        fh = logging.FileHandler(LOG_FILE, mode='a', encoding='utf-8')
+        fh = logging.handlers.RotatingFileHandler('./slack_summary_'+LOG_FILE, mode='a', encoding='utf-8', maxBytes=1000000, backupCount=5,)
         fh.setLevel(log_level)
         fh.setFormatter(formatter)
         self.logger = logging.getLogger('slack_summary')
@@ -64,6 +65,7 @@ class SlackRouter(object):
             self.logger.info(u'Using gensim')
             summ_impl = TextRankTsSummarizer(self.build_interval(params))
         if summ_impl:
+            summ_impl.set_channel(channel_name)
             summary = summ_impl.report_summary(msgs)
         else:
             self.logger.warn(u'No summarizer was set!')

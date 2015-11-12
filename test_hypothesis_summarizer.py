@@ -2,7 +2,7 @@ import unittest
 import json
 import io
 from ts_summarizer import (TextRankTsSummarizer)
-from interval_summarizer import (IntervalSpec, TsSummarizer, tagged_sum,
+from interval_summarizer import (IntervalSpec, TsSummarizer,
                                  ts_to_time)
 from datetime import datetime
 import logging
@@ -25,7 +25,7 @@ def read_dir(fdir):
         coll += json.load(io.open(jfile, encoding='utf-8'))
     return coll
 
-test_json_msgs_c3 = [read_dir(fdir) for fdir in ['api-test',  'calypso',  'games',  'happiness',  'hg',  'jetpack',  'jetpackfuel',  'livechat',  'tickets',  'vip']]
+test_json_msgs_c3 = [(fdir, read_dir(fdir)) for fdir in ['api-test',  'calypso',  'games',  'happiness',  'hg',  'jetpack',  'jetpackfuel',  'livechat',  'tickets',  'vip']]
 
 print len(test_json_msgs_c3)
 
@@ -42,6 +42,7 @@ class TestSummarize(unittest.TestCase):
         logger.info("Input is %s", smp_msgs)
         asd = [{'days': days, 'size' : 3, 'txt' : u'Summary for first {} days:\n'.format(days)}]
         summ = TextRankTsSummarizer(asd)
+        summ.set_channel('elasticsearch')
         sumry = summ.summarize(smp_msgs)
         logger.debug("Summary is %s", sumry)
         # Length of summary is at least 1 and no greater than 3
@@ -61,6 +62,7 @@ class TestSummarize(unittest.TestCase):
         logger.info("Input is %s", smp_msgs)
         asd = [{'days': days, 'size' : 3, 'txt' : u'Summary for first {} days:\n'.format(days)}]
         summ = TextRankTsSummarizer(asd)
+        summ.set_channel('elasticsearch')
         sumry = summ.summarize(smp_msgs)
         logger.debug("Summary is %s", sumry)
         # Length of summary is at least 1 and no greater than 3
@@ -77,11 +79,12 @@ class TestSummarize(unittest.TestCase):
     )
     def test_text_rank_summarization_ds3_days(self, sampsize, days):
         """Generate something for N day interval"""
-        ssamp = random.choice(test_json_msgs_c3)
-        samp = random.choice(test_json_msgs_c3)[random.randint(1,len(ssamp)-2):]
+        channel, ssamp = random.choice(test_json_msgs_c3)
+        samp = ssamp[random.randint(1,len(ssamp)-2):]
         logger.info("Input is segment is %s", samp)
         asd = [{'days': days, 'size' : 3, 'txt' : u'Summary for first {} days:\n'.format(days)}]
         summ = TextRankTsSummarizer(asd)
+        summ.set_channel(channel)
         sumry = summ.summarize(samp)
         logger.debug("Summary is %s", sumry)
         # Length of summary is at least 1 and no greater than 3
@@ -100,6 +103,7 @@ class TestSummarize(unittest.TestCase):
         logger.info("Input is %s", smp_msgs)
         asd = [{'hours': hours, 'size' : 3, 'txt' : u'Summary for first {} hours:\n'.format(hours)}]
         summ = TextRankTsSummarizer(asd)
+        summ.set_channel('elasticsearch')
         sumry = summ.summarize(smp_msgs)
         logger.debug("Summary is %s", sumry)
         # Length of summary is at least 1 and no greater than 3
@@ -118,6 +122,7 @@ class TestSummarize(unittest.TestCase):
         logger.info("Input is %s", smp_msgs)
         asd = [{'hours': hours, 'size' : 3, 'txt' : u'Summary for first {} hours:\n'.format(hours)}]
         summ = TextRankTsSummarizer(asd)
+        summ.set_channel('elasticsearch')
         sumry = summ.summarize(smp_msgs)
         logger.debug("Summary is %s", sumry)
         # Length of summary is at least 1 and no greater than 3
@@ -134,11 +139,12 @@ class TestSummarize(unittest.TestCase):
     )
     def test_text_rank_summarization_ds3_hours(self, sampsize, hours):
         """Generate something for N hour intervals"""
-        ssamp = random.choice(test_json_msgs_c3)
-        samp = random.choice(test_json_msgs_c3)[random.randint(1,len(ssamp)-2):]
+        channel, ssamp = random.choice(test_json_msgs_c3)
+        samp = ssamp[random.randint(1,len(ssamp)-2):]
         logger.info("Input is segment is %s", samp)
         asd = [{'hours': hours, 'size' : 3, 'txt' : u'Summary for first {} hours:\n'.format(hours)}]
         summ = TextRankTsSummarizer(asd)
+        summ.set_channel(channel)
         sumry = summ.summarize(samp)
         logger.debug("Summary is %s", sumry)
         # Length of summary is at least 1 and no greater than 3

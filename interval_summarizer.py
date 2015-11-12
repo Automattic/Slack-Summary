@@ -3,15 +3,20 @@ from collections import namedtuple
 from datetime import (timedelta, datetime)
 import re
 import logging
+import logging.handlers
 import sys
 import json
 import io
 from ts_config import TS_DEBUG, TS_LOG
 import glob
 from utils import get_msg_text
+from slacker import Slacker
+from config import keys
+
 logging.basicConfig(level=logging.INFO)
 
 class IntervalSpec(object):
+    
     slk_ts = re.compile(r'(?P<epoch>[1-9][^\.]+).*')
     
     def __init__(self, seconds=0, minutes=0, hours=0, days=0, weeks=0, size=10, txt=u"Summary for interval: \n"):
@@ -35,13 +40,15 @@ class IntervalSpec(object):
 class TsSummarizer(object):
     """Constructs summaries over a set of ranges"""
     flrg = re.compile(r'[\n\r\.]|\&[a-z]+;|<http:[^>]+>|\:[^: ]+\:|`{3}[^`]*`{3}')
-
+    archive_link = u'https://a8c.slack.com/archives/{}/p{}'
     def __init__(self, ispecs):
         self.intervals = map(lambda ispec: IntervalSpec(**ispec), ispecs)
         self.logger = logging.getLogger(__name__)
+        self.channel = None
+        self.slack = None
         log_level = logging.DEBUG if TS_DEBUG else logging.INFO
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        fh = logging.FileHandler(TS_LOG, mode='a', encoding='utf-8')
+        fh = logging.handlers.RotatingFileHandler('./interval_'+TS_LOG, mode='a', encoding='utf-8', maxBytes=1000000, backupCount=5)
         fh.setLevel(log_level)
         fh.setFormatter(formatter)
         self.logger = logging.getLogger('interval_summarizer')
@@ -59,10 +66,29 @@ class TsSummarizer(object):
     def set_interval(self, ispecs):
         self.intervals = map(lambda ispec: IntervalSpec(**ispec), ispecs)
 
+    def set_channel(self, channel):
+        self.channel = channel
+
+    def set_slack(self, conn):
+        self.slack = conn
+
     def summarize_segment(self, msg_seg):
         """Call the summarizer that is used."""
         return msg_seg
 
+    def tagged_sum(self, msg):
+        user = "USER UNKNOWN"
+        if 'user' in msg:
+            user = msg['user']
+        elif 'bot_id' in msg:
+            user = msg['bot_id']
+        split_text = get_msg_text(msg).split()
+        text = u' '.join(split_text[:30])+u'...' if len(split_text) > 30 else u' '.join(split_text)
+        if self.channel:
+            link = TsSummarizer.archive_link.format(self.channel, re.sub(r'\.',u'',msg['ts']))
+            text = u'<'+link+'|'+text+'>'
+        return u'@{} <@{}>: {}'.format(ts_to_time(msg['ts']).strftime("%a-%b-%-m-%Y %H:%M:%S"), user,  text)
+    
     def segment_messages(self, messages):
         """Create message bins.
         Parameters
@@ -80,13 +106,6 @@ class TsSummarizer(object):
         msgs = [msg for msg in messages if u'attachments' in msg or u'text' in msg ]
         if len(msgs) == 0:
             return [(self.intervals[0].size, None, self.intervals[0].txt)]
-        # msgs = [msg for msg in messages if u'attachments' not in msg and u'text' in msg and u'subtype' not in msg]
-        # if len(msgs) == 0:
-        #     msgs = [msg for msg in messages if u'text' in msg and u'subtype' not in msg]
-        #     if len(msgs) == 0:
-        #         msgs = [msg for msg in messages if u'text' in msg]
-        #         if len(msgs) == 0:
-        #             return [(self.intervals[0].size, msgs, self.intervals[0].txt)]
         if len(msgs) == 1:
             return [(self.intervals[0].size, msgs, self.intervals[0].txt)]
         smessages = sorted(msgs, reverse=True, key=lambda msg: ts_to_time(msg['ts']))
@@ -122,14 +141,6 @@ class TsSummarizer(object):
         self.logger.debug("Checking to see if %s is between %s and end", msg_ts, istart)
         return self.intervals[idx].contains(istart, msg_ts)
 
-def tagged_sum(msg):
-    user = "USER UNKNOWN"
-    if 'user' in msg:
-        user = msg['user']
-    elif 'bot_id' in msg:
-        user = u'BOT'+msg['bot_id']
-    return u'@{}  <{}>: {}'.format(ts_to_time(msg['ts']).strftime("%a-%b-%-m-%Y %H:%M:%S %Z"), user,  get_msg_text(msg))
-
 def ts_to_time(slack_ts):
     """
     Parameters
@@ -137,7 +148,7 @@ def ts_to_time(slack_ts):
     Return
     datetime
     """
-    return datetime.fromtimestamp(long(IntervalSpec.slk_ts.search(slack_ts).group('epoch')))
+    return datetime.utcfromtimestamp(long(IntervalSpec.slk_ts.search(slack_ts).group('epoch')))
 
 def canonicalize(txt):
     """Filter and change text to sentece form"""

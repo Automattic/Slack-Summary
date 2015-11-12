@@ -10,6 +10,7 @@ import config
 from ts_config import DEBUG, LOG_FILE
 import sys
 import logging
+import logging.handlers
 import json
 import io
 
@@ -18,7 +19,7 @@ class Test(unittest.TestCase):
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         log_level = logging.DEBUG if DEBUG else logging.INFO
         self.logger = logging.getLogger(__name__)
-        self.fh = logging.FileHandler(LOG_FILE, mode='a', encoding='utf-8')
+        self.fh = logging.handlers.RotatingFileHandler('./testing_'+LOG_FILE, mode='a', encoding='utf-8', maxBytes=1000000, backupCount=5,)
         self.fh.setLevel(log_level)
         self.fh.setFormatter(formatter)
         self.logger.handlers = []
@@ -49,14 +50,14 @@ class Test(unittest.TestCase):
     def test_summary(self, mock_slack):
         mock_slack.return_value.channels = self.channel_mock
         sr = SlackRouter()
-        self.assertTrue(sr.get_response('achannell') == self.myresponse)
+        self.assertTrue(sr.get_response('elasticsearch') == self.myresponse)
 
     @mock.patch('slacker.Slacker')
     def test_service(self, mock_slack):
         mock_slack.return_value.channels = self.channel_mock
         rv = self.app.post('/slack', data=dict(
-                    channel_id='achannel',
-                    channel_name='achannel',
+                    channel_id='elasticsearch',
+                    channel_name='elasticsearch',
                     user_id='user123',
                     user_name='bob',
                     text='-5 days @bob'
@@ -70,8 +71,8 @@ class Test(unittest.TestCase):
     def test_service_lr(self, mock_slack):
         mock_slack.return_value.channels = self.channel_mock2
         rv = self.app.post('/slack', data=dict(
-                    channel_id='achannel',
-                    channel_name='achannel',
+                    channel_id='elasticsearch',
+                    channel_name='elasticsearch',
                     user_id='user123456',
                     user_name='bob2',
                     text='-2 days @bob'
@@ -85,8 +86,8 @@ class Test(unittest.TestCase):
     def test_service_no_command(self, mock_slack):
         mock_slack.return_value.channels = self.channel_mock2
         rv = self.app.post('/slack', data=dict(
-                    channel_id='achannel',
-                    channel_name='achannel',
+                    channel_id='elasticsearch',
+                    channel_name='elasticsearch',
                     user_id='user123456',
                     user_name='bob2',
                     text=''
@@ -100,8 +101,8 @@ class Test(unittest.TestCase):
     def test_service_no_text(self, mock_slack):
         mock_slack.return_value.channels = self.channel_mock2
         rv = self.app.post('/slack', data=dict(
-                    channel_id='achannel',
-                    channel_name='achannel',
+                    channel_id='elasticsearch',
+                    channel_name='elasticsearch',
                     user_id='user123456',
                     user_name='bob2'
                 ), follow_redirects=True)
@@ -114,8 +115,8 @@ class Test(unittest.TestCase):
     def test_service_bad_text(self, mock_slack):
         mock_slack.return_value.channels = self.channel_mock2
         rv = self.app.post('/slack', data=dict(
-                    channel_id='achannel',
-                    channel_name='achannel',
+                    channel_id='elasticsearch',
+                    channel_name='elasticsearch',
                     user_id='user123456',
                     user_name='bob2',
                     text='adjfalkjldkj adfajldkajflkjadh ndnakdjlkjlkjd'
@@ -129,8 +130,8 @@ class Test(unittest.TestCase):
     def test_service_bad_units(self, mock_slack):
         mock_slack.return_value.channels = self.channel_mock2
         rv = self.app.post('/slack', data=dict(
-                    channel_id='achannel',
-                    channel_name='achannel',
+                    channel_id='elasticsearch',
+                    channel_name='elasticsearch',
                     user_id='user123456',
                     user_name='bob2',
                     text='2 adjfalkjldkj adfajldkajflkjadh ndnakdjlkjlkjd'
@@ -144,8 +145,8 @@ class Test(unittest.TestCase):
     def test_gensim(self, mock_slack):
         mock_slack.return_value.channels = self.channel_mock2
         rv = self.app.post('/slack', data=dict(
-                    channel_id='achannel',
-                    channel_name='achannel',
+                    channel_id='elasticsearch',
+                    channel_name='elasticsearch',
                     user_id='user123456',
                     user_name='bob2',
                     text='2 days gensim'
