@@ -26,29 +26,12 @@ class TestSummarize(unittest.TestCase):
     def test_interval_conversion(self):
         self.assertTrue(ts_to_time("1441925382.000186") == datetime.utcfromtimestamp(1441925382))
 
-    def test_create_intervals(self):
-        asd = [{'minutes': 10}, {'hours':12}]
-        self.assertTrue(len(TestSummarize.test_msgs) == 8)
-        summ = TsSummarizer(asd)
-        msgs = summ.segment_messages(TestSummarize.test_msgs)
-        logger.debug("Messages received %s", msgs)
-        self.assertTrue(len(msgs) == 2)
-        logger.debug("First entry should be %s is %s", TestSummarize.test_msgs[0:4], msgs[1][1][::-1])
-        self.assertTrue(msgs[0][1][::-1] == TestSummarize.test_msgs[4:])
-        self.assertTrue(msgs[1][1][::-1] == TestSummarize.test_msgs[0:4])
-        asd2 = [{'minutes': 5}, ]
-        summ = TsSummarizer(asd2)
-        msgs = summ.segment_messages(TestSummarize.test_msgs)
-        logger.debug("Messages received %s", msgs)
-        self.assertTrue(len(msgs) == 1)
-        logger.debug("First entry should be %s is %s", TestSummarize.test_msgs[4:], msgs[0][1][::-1])
-        self.assertTrue(msgs[0][1][::-1] == TestSummarize.test_msgs[4:])
 
     def test_summarizer_tag_display(self):
         """Make sure that the display of the tag is correct"""
         logger.info("Running the taggger test")
-        asd = [{'minutes': 60, 'size' : 2, 'txt' : u'Summary for first 60 minutes:\n'}]
-        summ = TsSummarizer(asd)
+        asd = {'minutes': 60, 'size' : 2, 'txt' : u'Summary for first 60 minutes:\n'}
+        summ = TsSummarizer()
         summ.set_channel("elasticsearch")
         summ_msg = summ.tagged_sum(TestSummarize.test_msgs[1])
         logger.debug("Test summ msg is %s", summ_msg)
@@ -60,12 +43,12 @@ class TestSummarize(unittest.TestCase):
         if "gensim" in SUMMS:
             asd = [{'minutes': 60, 'size' : 2, 'txt' : u'Summary for first 60 minutes:\n'}, {'hours':12, 'size' : 1, 'txt' : u'Summary for last 12 hours:\n'}]
             summ = None
-            summ = TextRankTsSummarizer(asd)
+            summ = TextRankTsSummarizer()
             summ.set_channel('elasticsearch')
             logger.debug("Testing gensim summarizer")
-            sumry = summ.summarize(TestSummarize.test_msgs)
+            sumry = summ.summarize(TestSummarize.test_msgs, range_spec=asd)
             logger.debug("Summary is %s", sumry)
-            self.assertTrue(len(sumry) == 2)
+            self.assertTrue(len(sumry) > 1)
         else:
             pass
 
@@ -75,13 +58,14 @@ class TestSummarize(unittest.TestCase):
             asd = [{'minutes': 60, 'size' : 2, 'txt' : u'Summary for first 60 minutes:\n'}, {'hours':12, 'size' : 1, 'txt' : u'Summary for last 12 hours:\n'}]
             summ = None
             lsa_summ = lsa.LsaSummarizer()
-            summ = SpacyTsSummarizer(asd)
-            summ.set_summarizer(lsa_summ)
-            summ.set_channel('elasticsearch')
-            logger.debug("Testing spacy summarizer")
-            sumry = summ.summarize(TestSummarize.test_msgs)
-            logger.debug("Summary is %s", sumry)
-            self.assertTrue(len(sumry) == 2)
+            summ = SpacyTsSummarizer()
+            for rs in asd:
+                summ.set_summarizer(lsa_summ)
+                summ.set_channel('elasticsearch')
+                logger.debug("Testing spacy summarizer")
+                sumry = summ.summarize(TestSummarize.test_msgs, range_spec=rs)
+                logger.debug("Summary is %s, length %s", sumry, len(sumry))
+                self.assertTrue(len(sumry) > 1)
         else:
             pass
 

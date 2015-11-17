@@ -43,9 +43,10 @@ class LsaSummarizer(BaseSummarizer):
     def stop_words(self, words):
         self._stop_words = frozenset(map(self.normalize_word, words))
 
-    def __call__(self, document, sentences_count):
+    def __call__(self, document, sentences_count, user_dict):
         self._ensure_dependecies_installed()
         self.nlp_doc = self.nlp(document)
+        self.user_dict = user_dict
         logger.info("Created doc")
         
         dictionary = self._create_dictionary()
@@ -68,7 +69,7 @@ class LsaSummarizer(BaseSummarizer):
         if to_add > 0:
             final_sents += sorted(list(additional_sents)[:to_add], key=lambda x: len(x), reverse=True)
         logger.info("Filtered sentences %s", filt_sents)
-        logger.info("Final recommendations are %s", final_sents)
+        logger.info("Final recommendations are %s", final_sents[:sentences_count])
         return final_sents
 
 
@@ -91,8 +92,10 @@ class LsaSummarizer(BaseSummarizer):
         """Creates mapping key = word, value = row index"""
         words = [wd.orth_ for wd in self.nlp_doc if wd.pos != PUNCT]
         unique_words = frozenset(w.lemma_ for w in self.nlp_doc if w not in STOPWORDS and w.tag_ != "PRP" and (w.pos == VERB or w.pos == NOUN))
+        unique_users = frozenset(self.user_dict.values())
         logger.info("Have %s unique words" % len(unique_words))
-        return dict((w, i) for i, w in enumerate(unique_words))
+        logger.info("Have %s unique users" % len(unique_users))
+        return dict((w, i) for i, w in enumerate(unique_words|unique_users))
 
     def collect_bow(self, txt):
         sents = nlp(txt).sents
@@ -118,6 +121,9 @@ class LsaSummarizer(BaseSummarizer):
         for col, sentence in enumerate(sentences):
             for word in [wd.lemma_ for wd in sentence if wd.lemma_ in dictionary]:
                 matrix[dictionary[word], col] += 1
+            if sentence.text in self.user_dict and len(self.user_dict[sentence.text]) > 1:
+                logger.info("Matching sentence %s with user %s", sentence.text, self.user_dict[sentence.text])
+                matrix[dictionary[self.user_dict[sentence.text]], col] += 1
         return matrix
 
     def _compute_term_frequency(self, matrix, smooth=0.4):

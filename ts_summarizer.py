@@ -23,8 +23,8 @@ logging.basicConfig(level=logging.INFO)
 
 class TextRankTsSummarizer(TsSummarizer):
 
-    def __init__(self, ispecs):
-        TsSummarizer.__init__(self, ispecs)
+    def __init__(self, ):
+        TsSummarizer.__init__(self, )
         log_level = logging.DEBUG if TS_DEBUG else logging.INFO
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         fh = logging.handlers.RotatingFileHandler('./text_rank_'+TS_LOG, mode='a', encoding='utf-8', maxBytes=1000000, backupCount=5)
@@ -37,16 +37,17 @@ class TextRankTsSummarizer(TsSummarizer):
     def set_summarizer(self, val):
         pass
                 
-    def summarize_segment(self, msg_segment):
+    def summarize(self, msgs, range_spec=None):
         """Return a summary of the text
         TODO: 1. Looks like spacy is not getting the main sentence from the message.
         2. Load times for the spacy summarizer won't cut it. Commenting out now 
            until this can be fixed
         """
-        size, msgs, txt = msg_segment
         if not msgs or len(msgs) == 0:
             self.logger.warn("No messages to form summary")
             return u"\n Unable to form summary here.\n"
+        txt = range_spec['txt'] if range_spec else u'Summary is'
+        size = range_spec['size'] if range_spec and 'size' in range_spec else 3
         summ = txt + u' '
         #limit canonical dictionary to top 200 docs
         can_dict = {canonicalize(get_msg_text(msg)) : msg for msg in msgs}
@@ -111,7 +112,8 @@ def main():
     for msg_file in glob.glob('./data/*.json'):
         with io.open(msg_file, encoding='utf-8',) as mf:
             all_msgs += json.load(mf)
-    logger.info(tr_summ.report_summary(all_msgs))
+    for filt in asd:
+        logger.info(tr_summ.summarize(all_msgs, range_spec=filt))
     
 if __name__ == '__main__':
     main()

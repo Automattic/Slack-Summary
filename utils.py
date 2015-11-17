@@ -37,9 +37,13 @@ def get_msg_text(msg):
         ats = msg['attachments']
         if len(ats) > 0:
             at = ats[0]
-            if 'title' in at and len(at['title']) > 0:
-                return at['title']
-            if 'text' in at and len(at['text']) > 0:
-                return at['text']
-    return u"Message text not retrieved"
+            att_text = []
+            if 'title' in at:
+                att_text.append(at['title'])
+            if 'text' in at:
+                att_text.append(at['text'])
+            max_text = max(att_text, key=lambda txt: len(txt))
+            if len(max_text) > 0:
+                return max_text
+    return u""
             

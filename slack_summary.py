@@ -10,6 +10,7 @@ import logging.handlers
 import uuid
 import re
 import io
+from datetime import timedelta, datetime
 if "gensim" in SUMMS:
     from ts_summarizer import TextRankTsSummarizer
 if "spacy" in SUMMS:
@@ -38,6 +39,40 @@ class SlackRouter(object):
         self.logger.debug(u'Generating summary for channel: %s', channel_id)
         return self.slack.channels.history(channel_id)
 
+    def get_messages(self, channel_id, params):
+        """Get messages based upon the interval"""
+        tdelt = self.build_delta(params)
+        earliest_time = datetime.now()-tdelt
+        self.logger.debug(u'Earliest time %s', earliest_time)
+        ts = u'{}.999999'.format(earliest_time.strftime("%s"))
+        self.logger.debug(u'Channel id %s, TS string %s', channel_id, ts)
+        response =  self.slack.channels.history(channel_id, oldest=ts, count=999)
+	res = (response.body)
+        add_more = True
+        msgs = []
+        msg_ids = set()
+        while add_more:
+            if 'max_msgs' in params and params['max_msgs'] <= len(msgs):
+                return msgs
+            if u'messages' in res:
+                new_set = set([msg['ts'] for msg in res['messages']])
+                if len(new_set.intersection(msg_ids)) > 0:
+                    self.logger.debug(u'Overlap in messages')
+                    return msgs
+                msgs.extend(res['messages'])
+                msg_ids.update(new_set)
+                self.logger.debug(u'Got %s messages', len(msgs))
+            else:
+                return msgs    
+            if 'has_more' in res and res['has_more']:
+                self.logger.debug(u'Paging for more messages.')
+                response =  self.slack.channels.history(channel_id, oldest=ts, latest=res['messages'][-1]['ts'], count=999)
+                res = (response.body)
+            else:
+                self.logger.debug(u'No more messages.')
+                add_more = False
+        return msgs
+
     def get_summary(self, **args):
         channel_id = args['channel_id'] if 'channel_id' in args else None
         channel_name = args['channel_name'] if 'channel_name' in args else None
@@ -51,22 +86,20 @@ class SlackRouter(object):
             with io.open(TEST_JSON, encoding='utf-8') as iot:
                 msgs = json.load(iot)[u'messages']
         else:
-            response =  self.get_response(channel_id)
-	    msgs = (response.body)
-            msgs = msgs[u'messages'] if u'messages' in msgs else msgs
+            msgs = self.get_messages(channel_id, params)
         summ_object = args['summ']
         summ_impl = None
         summary = u''
         if summ_object and "spacy" in SUMMS:
             self.logger.info(u'Using spacy')
-            summ_impl = SpacyTsSummarizer(self.build_interval(params))
+            summ_impl = SpacyTsSummarizer()
             summ_impl.set_summarizer(summ_object)
         elif "gensim" in SUMMS:
             self.logger.info(u'Using gensim')
-            summ_impl = TextRankTsSummarizer(self.build_interval(params))
+            summ_impl = TextRankTsSummarizer()
         if summ_impl:
             summ_impl.set_channel(channel_name)
-            summary = summ_impl.report_summary(msgs)
+            summary = summ_impl.summarize(msgs)
         else:
             self.logger.warn(u'No summarizer was set!')
         self.logger.info(u'Summary request %s user_id: %s', request_id, user_id)
@@ -111,3 +144,13 @@ class SlackRouter(object):
             interval['txt'] = u"Summary for last 5 days:\n"
         return [interval]
 
+    def build_delta(self, commands):
+        """Return a single interval for the summarization"""
+        unit, units, keywords = self._parse_args(commands)
+        interval = {'seconds':0, 'minutes': 0, 'hours': 0, 'days': 0, 'weeks': 0}
+        if unit:
+            interval[unit+'s'] = units
+        else:
+            interval['days'] = 5
+        return timedelta(**interval)
+    

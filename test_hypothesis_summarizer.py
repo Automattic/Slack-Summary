@@ -40,10 +40,10 @@ class TestSummarize(unittest.TestCase):
     def test_text_rank_summarization_ds1_days(self, smp_msgs, days):
         """Generate something for N day interval"""
         logger.info("Input is %s", smp_msgs)
-        asd = [{'days': days, 'size' : 3, 'txt' : u'Summary for first {} days:\n'.format(days)}]
-        summ = TextRankTsSummarizer(asd)
+        asd = {'days': days, 'size' : 3, 'txt' : u'Summary for first {} days:\n'.format(days)}
+        summ = TextRankTsSummarizer()
         summ.set_channel('elasticsearch')
-        sumry = summ.summarize(smp_msgs)
+        sumry = summ.summarize(smp_msgs, range_spec=asd)
         logger.debug("Summary is %s", sumry)
         # Length of summary is at least 1 and no greater than 3
         self.assertTrue(len(sumry) >= 1)
@@ -60,10 +60,10 @@ class TestSummarize(unittest.TestCase):
     def test_text_rank_summarization_ds2_days(self, smp_msgs, days):
         """Generate something for N day interval"""
         logger.info("Input is %s", smp_msgs)
-        asd = [{'days': days, 'size' : 3, 'txt' : u'Summary for first {} days:\n'.format(days)}]
-        summ = TextRankTsSummarizer(asd)
+        asd = {'days': days, 'size' : 3, 'txt' : u'Summary for first {} days:\n'.format(days)}
+        summ = TextRankTsSummarizer()
         summ.set_channel('elasticsearch')
-        sumry = summ.summarize(smp_msgs)
+        sumry = summ.summarize(smp_msgs, range_spec=asd)
         logger.debug("Summary is %s", sumry)
         # Length of summary is at least 1 and no greater than 3
         self.assertTrue(len(sumry) >= 1)
@@ -82,10 +82,10 @@ class TestSummarize(unittest.TestCase):
         channel, ssamp = random.choice(test_json_msgs_c3)
         samp = ssamp[random.randint(1,len(ssamp)-2):]
         logger.info("Input is segment is %s", samp)
-        asd = [{'days': days, 'size' : 3, 'txt' : u'Summary for first {} days:\n'.format(days)}]
-        summ = TextRankTsSummarizer(asd)
+        asd = {'days': days, 'size' : 3, 'txt' : u'Summary for first {} days:\n'.format(days)}
+        summ = TextRankTsSummarizer()
         summ.set_channel(channel)
-        sumry = summ.summarize(samp)
+        sumry = summ.summarize(samp, range_spec=asd)
         logger.debug("Summary is %s", sumry)
         # Length of summary is at least 1 and no greater than 3
         self.assertTrue(len(sumry) >= 1)
@@ -101,10 +101,10 @@ class TestSummarize(unittest.TestCase):
     def test_text_rank_summarization_ds1_hours(self, smp_msgs, hours):
         """Generate something for N hour intervals"""
         logger.info("Input is %s", smp_msgs)
-        asd = [{'hours': hours, 'size' : 3, 'txt' : u'Summary for first {} hours:\n'.format(hours)}]
-        summ = TextRankTsSummarizer(asd)
+        asd = {'hours': hours, 'size' : 3, 'txt' : u'Summary for first {} hours:\n'.format(hours)}
+        summ = TextRankTsSummarizer()
         summ.set_channel('elasticsearch')
-        sumry = summ.summarize(smp_msgs)
+        sumry = summ.summarize(smp_msgs, range_spec=asd)
         logger.debug("Summary is %s", sumry)
         # Length of summary is at least 1 and no greater than 3
         self.assertTrue(len(sumry) >= 1)
@@ -120,10 +120,10 @@ class TestSummarize(unittest.TestCase):
     def test_text_rank_summarization_ds2_hours(self, smp_msgs, hours):
         """Generate something for N hour intervals"""
         logger.info("Input is %s", smp_msgs)
-        asd = [{'hours': hours, 'size' : 3, 'txt' : u'Summary for first {} hours:\n'.format(hours)}]
-        summ = TextRankTsSummarizer(asd)
+        asd = {'hours': hours, 'size' : 3, 'txt' : u'Summary for first {} hours:\n'.format(hours)}
+        summ = TextRankTsSummarizer()
         summ.set_channel('elasticsearch')
-        sumry = summ.summarize(smp_msgs)
+        sumry = summ.summarize(smp_msgs, range_spec=asd)
         logger.debug("Summary is %s", sumry)
         # Length of summary is at least 1 and no greater than 3
         self.assertTrue(len(sumry) >= 1)
@@ -142,10 +142,10 @@ class TestSummarize(unittest.TestCase):
         channel, ssamp = random.choice(test_json_msgs_c3)
         samp = ssamp[random.randint(1,len(ssamp)-2):]
         logger.info("Input is segment is %s", samp)
-        asd = [{'hours': hours, 'size' : 3, 'txt' : u'Summary for first {} hours:\n'.format(hours)}]
-        summ = TextRankTsSummarizer(asd)
+        asd = {'hours': hours, 'size' : 3, 'txt' : u'Summary for first {} hours:\n'.format(hours)}
+        summ = TextRankTsSummarizer()
         summ.set_channel(channel)
-        sumry = summ.summarize(samp)
+        sumry = summ.summarize(samp, range_spec=asd)
         logger.debug("Summary is %s", sumry)
         # Length of summary is at least 1 and no greater than 3
         self.assertTrue(len(sumry) >= 1)
