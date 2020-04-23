@@ -1,76 +1,74 @@
-platform=$(shell uname -s)
-conda_path=$(shell which conda)
+SHELL=/bin/bash
+PLATFORM=$(shell uname -s)
 
-.PHONY: show check-env venv check run hyp spacy_hyp
+.PHONY: clean check deps run build testdeps
 
+PYTHONPATH := PYTHONPATH=./:$$PYTHONPATH
 
-ifeq ($(platform),Darwin)
-
-ifneq ($(findstring conda,$(conda_path)),conda)
-	$(error Conda not present)
+CONDA_EXE=$(shell which conda)
+ifeq ($(CONDA_EXE),)
+	CONDA_PATH := $(HOME)/miniconda
+	CONDA_EXE := $(CONDA_PATH)/bin/conda
 else
-	@echo Conda present at $(conda_path)
+	CONDA_PATH := $(shell dirname $(dir $(CONDA_EXE)))
 endif
 
-ifeq ($(SUMMARIZE_VENV),)
-SUMMARIZE_VENV=summarize_venv2
+CONDA_ENV_PATH = ./conda_env
+CONDA_ACTIVATE := source $(CONDA_PATH)/bin/activate $(CONDA_ENV_PATH)
+
+PYBUILD_ARTEFACTS := ./build ./dist ./.cache ./.eggs
+
+build: $(CONDA_ENV_PATH)
+
+test: build
+	$(CONDA_ACTIVATE) && $(PYTHONPATH) pytest -v --ignore $(CONDA_ENV_PATH)
+
+pre-commit: build
+	$(CONDA_ACTIVATE) && $(PYTHONPATH) pre-commit run --all-files
+
+check: test pre-commit
+
+ifeq ($(PLATFORM),Darwin)
+
+CONDA_OS := MacOSX
+BREWDEPS := coreutils autoconf libtool
+
+deps:
+	brew install $(BREWDEPS)
+
+
+else ifeq ($(PLATFORM),Linux)
+
+CONDA_OS := Linux
+
+deps:
+	sudo apt-get -yqq update
+	sudo apt-get -yqq install bzip2 git wget
+
+testdeps: deps
+	sudo apt-get -yqq install openjdk-8-jdk
+
+else
+
+ $(error, Unknown platform)
+
 endif
-ifeq ($(CONDA_ENV_PATH),)
-CONDA_ENV_PATH=//anaconda
-endif
 
-HOST_IP?=10.0.0.10
-NB_PORT?=8887
+MINICONDA_URL := http://repo.continuum.io/miniconda/Miniconda3-latest-$(CONDA_OS)-x86_64.sh
 
-PYLIBS := numpy scipy scikit-learn gensim spacy flask
-VENVDIR := $(CONDA_ENV_PATH)/envs/$(SUMMARIZE_VENV)
+$(CONDA_EXE):
+	wget -q $(MINICONDA_URL) -O $(HOME)/miniconda.sh
+	$(SHELL) $(HOME)/miniconda.sh -b -p $(HOME)/miniconda
+	$(CONDA_EXE) install --yes boto3
 
-$(VENVDIR):
-	test -d $(VENVDIR) || conda create -y -n $(SUMMARIZE_VENV) $(PYLIBS)
-
-deps: $(VENVDIR)
-
-check: $(VENVDIR)
-	source activate $(SUMMARIZE_VENV);\
-	python ./test_summarizer.py;\
-	python ./test_service_components.py
-
-run: $(VENVDIR)
-	source activate $(SUMMARIZE_VENV);\
-	python ./ts_summarizer.py
-
-else ifeq ($(platform),Linux)
-
-VENVDIR := ./venv
-PYVENV := $(VENVDIR)/bin/python
-NBVENV := $(VENVDIR)/bin/ipython
-PIPVENV := $(VENVDIR)/bin/pip
+$(CONDA_ENV_PATH): $(CONDA_EXE) environment.yml VERSION
+	$(MAKE) clean
+	$(CONDA_EXE) env create --file environment.yml --prefix $(CONDA_ENV_PATH)
+	$(CONDA_ACTIVATE) && pre-commit install && python -m spacy download en
 
 clean:
-	rm -r $(VENVDIR)
+	rm -rf $(PYBUILD_ARTEFACTS)
+	if test -d $(CONDA_ENV_PATH); then \
+		$(CONDA_EXE) env remove --yes -p $(CONDA_ENV_PATH); \
+	fi
 
-check: | $(VENVDIR)
-	$(PYVENV) ./test_summarizer.py;\
-	$(PYVENV) ./test_service_components.py
-
-hyp: | $(VENVDIR)
-	$(PYVENV) ./test_hypothesis_summarizer.py
-
-spacy_hyp: | $(VENVDIR)
-	$(PYVENV) ./test_spacy_with_hypothesis.py
-
-run: | $(VENVDIR)
-	$(PYVENV) ./ts_summarizer.py
-
-notebook: | $(VENVDIR)
-	$(NBVENV) notebook --ip=$(HOST_IP) --port=$(NB_PORT) --no-browser
-
-$(VENVDIR):
-	test -d $(VENVDIR) || (virtualenv $(VENVDIR);\
-	$(PIPVENV) install -r ./requirements.txt;\
-	$(PYVENV) -m spacy.en.download all)
-
-else
-	$(error, Unknown platform)
-
-endif
