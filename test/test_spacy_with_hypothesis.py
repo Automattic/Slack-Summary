@@ -48,7 +48,7 @@ class TestSummarize(unittest.TestCase):
         sumry = TestSummarize.summ.summarize(smp_msgs, range_spec=asd)
         _logger.debug("Summary is %s", sumry)
         # Length of summary is at least 1 and no greater than 3
-        self.assertTrue(len(sumry) >= 1)
+        self.assertTrue(len(sumry.split('\n')) >= 1)
 
     @given(
         lists(elements=sampled_from(TEST_JSON_MSGS_ELASTIC), min_size=12),
@@ -63,12 +63,13 @@ class TestSummarize(unittest.TestCase):
         TestSummarize.summ.set_channel('elasticsearch')
         sumry = TestSummarize.summ.summarize(smp_msgs, range_spec=asd)
         _logger.debug("Summary is %s", sumry)
+        print(f"Summary is {sumry}")
         # Length of summary is at least 1 and no greater than 3
-        self.assertTrue(len(sumry) >= 1)
+        self.assertTrue(len(sumry.split('\n')) >= 1)
 
     @_slack_logs_skip
     @given(
-        integers(min_value=1, max_value=20)
+        integers(min_value=2, max_value=20)
     )
     @settings(deadline=1000, max_examples=20)
     def test_spacy_large_days(self, days):
@@ -81,10 +82,10 @@ class TestSummarize(unittest.TestCase):
         sumry = TestSummarize.summ.summarize(samp, range_spec=asd)
         _logger.debug("Summary is %s", sumry)
         # Length of summary is at least 1 and no greater than 3
-        self.assertTrue(len(sumry) >= 1)
+        self.assertTrue(len(sumry.split('\n')) >= 1)
 
     @given(lists(elements=sampled_from(TEST_JSON_MSGS), min_size=1),
-           integers(min_value=1, max_value=24)
+           integers(min_value=2, max_value=24)
            )
     @settings(deadline=1000, max_examples=20)
     def test_spacy_small_hours(self, smp_msgs, hours):
@@ -95,11 +96,10 @@ class TestSummarize(unittest.TestCase):
         sumry = TestSummarize.summ.summarize(smp_msgs, range_spec=asd)
         _logger.debug("Summary is %s", sumry)
         # Length of summary is at least 1 and no greater than 3
-        self.assertTrue(len(sumry) >= 1)
+        self.assertTrue(len(sumry.split('\n')) >= 1)
 
     @given(lists(elements=sampled_from(TEST_JSON_MSGS_ELASTIC), min_size=1),
            integers(min_value=1, max_value=24)
-           # , settings=settings(deadline=1000)
            )
     @settings(deadline=1000, max_examples=20)
     def test_spacy_med_hours(self, smp_msgs, hours):
@@ -110,11 +110,11 @@ class TestSummarize(unittest.TestCase):
         sumry = TestSummarize.summ.summarize(smp_msgs, range_spec=asd)
         _logger.debug("Summary is %s", sumry)
         # Length of summary is at least 1 and no greater than 3
-        self.assertTrue(len(sumry) >= 1)
+        self.assertTrue(len(sumry.split('\n')) >= 1)
 
     @_slack_logs_skip
     @given(
-        integers(min_value=1, max_value=24)
+        integers(min_value=2, max_value=24)
     )
     @settings(deadline=1000, max_examples=20)
     def test_spacy_large_hours(self, hours):
@@ -128,7 +128,7 @@ class TestSummarize(unittest.TestCase):
         sumry = TestSummarize.summ.summarize(samp, range_spec=asd)
         _logger.debug("Summary is %s", sumry)
         # Length of summary is at least 1 and no greater than 3
-        self.assertTrue(len(sumry) >= 1)
+        self.assertTrue(len(sumry.split('\n')) >= 1)
 
 
 if __name__ == '__main__':

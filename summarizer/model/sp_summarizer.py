@@ -5,7 +5,6 @@ import io
 import json
 import logging
 import logging.handlers
-from operator import attrgetter
 from datetime import time
 from typing import List, Dict, Any
 
@@ -39,13 +38,15 @@ class SpacyTsSummarizer(TsSummarizer):
 
     def summarize(self, msgs, range_spec=None):  # pylint: disable=invalid-name,too-many-locals,invalid-sequence-index
         """Return a summary of the text."""
-        size = range_spec['size'] if range_spec and 'size' in range_spec else 3
-        time_specs: dict = {spec: int(val) for (spec, val) in range_spec.items() if spec in TEMPORAL_VALUES}
+        size = 3
+        txt = u'Summary is'
         if not msgs:
             self.logger.warning('No messages to form summary')
             return u'\n Unable to form summary here.\n'
-        txt = range_spec['txt'] if range_spec else u'Summary is'
         if range_spec:
+            size = range_spec['size'] if 'size' in range_spec else size
+            txt = range_spec['txt'] if 'txt' in range_spec else txt
+            time_specs = {spec: int(val) for (spec, val) in range_spec.items() if spec in TEMPORAL_VALUES}
             self.logger.info('First 10 messages  %s of %s', msgs[:10], len(msgs))
             self.logger.info('Using time range spec %s', range_spec)
             start_time = time.strptime(range_spec['start'], "%B %d %Y") if 'start' in range_spec else ts_to_time(
@@ -69,33 +70,7 @@ class SpacyTsSummarizer(TsSummarizer):
             sents_sorted = sorted(simple_sum_list, key=lambda x: x['ts'])  # pylint: disable=invalid-sequence-index
             summ += u'\n'.join([self.tagged_sum(ss) for ss in sents_sorted])
         else:
-            max_sents = {}
-            user_sents = {}
-            for (txt, msg) in can_dict.items():
-                if len(txt.split()) > 3:
-                    sents = list(self.sumr.nlp(txt).sents)
-                    max_sents[max(sents, key=len).text] = msg
-                    user_sents[max(sents, key=len).text] = msg['user'] if 'user' in msg else u''
-            txt_sum = [v for v in self.sumr(u' '.join(max_sents.keys()), size, user_sents)]
-            self.logger.info('Canonical keys are \n%s', u' '.join(can_dict.keys()))
-            self.logger.info('Spacy summ %s', txt_sum)
-            nlp_summ = u'\n'.join([self.tagged_sum(max_sents[ss]) for ss in txt_sum if len(ss) > 1 and ss in max_sents])
-            nlp_list = [max_sents[ss] for ss in txt_sum if len(ss) > 1 and ss in max_sents]
-            for summary_sentence in txt_sum:
-                if summary_sentence not in max_sents and len(summary_sentence.split()) > 5:
-                    self.logger.info('Searching for: %s', summary_sentence)
-                    for (kval, msg) in max_sents.items():
-                        if summary_sentence in kval or (len(kval.split()) > 10 and kval in summary_sentence) \
-                                and len(nlp_list) <= size:
-                            nlp_summ += u'\n' + self.tagged_sum(msg)
-                            nlp_list.append(msg)
-            if len(nlp_list) < 2:
-                self.logger.info("Failed to find nlp summary using heuristic")
-                summ += u'\n'.join([self.tagged_sum(ss) for ss in sorted(simple_sum_list, key=attrgetter('ts'))])
-            else:
-                self.logger.info('First msg is %s, %s', nlp_list[0], nlp_list[0]['ts'])
-                self.logger.info('Sorted is %s', sorted(nlp_list, key=attrgetter('ts')))
-                summ += u'\n'.join([self.tagged_sum(ss) for ss in sorted(nlp_list, key=attrgetter('ts'))])
+            summ = self._summarize_large_seq(can_dict, size, summ, simple_sum_list)
         self.logger.info("Summary for segment %s is %s", msgs, summ)
         return summ
 
@@ -104,6 +79,37 @@ class SpacyTsSummarizer(TsSummarizer):
         ptext = u'. '.join([SpacyTsSummarizer.f_regexp.sub(u'', msg['text']) for msg in msg_segment if 'text' in msg])
         self.logger.debug("Parified text is %s", ptext)
         return ptext
+
+    def _summarize_large_seq(self, can_dict, size, summ, simple_sum_list):
+        max_sents = {}
+        user_sents = {}
+        for (txt, msg) in can_dict.items():
+            if len(txt.split()) > 3:
+                sents = list(self.sumr.nlp(txt).sents)
+                max_sents[max(sents, key=len).text] = msg
+                user_sents[max(sents, key=len).text] = msg['user'] if 'user' in msg else u''
+        txt_sum = [v for v in self.sumr(u' '.join(max_sents.keys()), size, user_sents)]
+        self.logger.info('Canonical keys are \n%s', u' '.join(can_dict.keys()))
+        self.logger.info('Spacy summ %s', txt_sum)
+        nlp_summ = u'\n'.join([self.tagged_sum(max_sents[ss]) for ss in txt_sum if len(ss) > 1 and ss in max_sents])
+        nlp_list = [max_sents[ss] for ss in txt_sum if len(ss) > 1 and ss in max_sents]
+        for summary_sentence in txt_sum:
+            if summary_sentence not in max_sents and len(summary_sentence.split()) > 5:
+                self.logger.info('Searching for: %s', summary_sentence)
+                for (kval, msg) in max_sents.items():
+                    if summary_sentence in kval or (len(kval.split()) > 10 and kval in summary_sentence) \
+                            and len(nlp_list) <= size:
+                        nlp_summ += u'\n' + self.tagged_sum(msg)
+                        nlp_list.append(msg)
+        if len(nlp_list) < 2:
+            self.logger.info("Failed to find nlp summary using heuristic")
+            sorted_list = sorted(simple_sum_list, key=lambda x: x['ts'])  # pylint: disable=invalid-sequence-index
+            summ += u'\n'.join([self.tagged_sum(ss) for ss in sorted_list])
+        else:
+            self.logger.info('First msg is %s, %s', nlp_list[0], nlp_list[0]['ts'])
+            self.logger.info('Sorted is %s', sorted(nlp_list, key=lambda x: x['ts']))
+            summ += u'\n'.join([self.tagged_sum(ss) for ss in sorted(nlp_list, key=lambda x: x['ts'])])
+        return summ
 
 
 def main():

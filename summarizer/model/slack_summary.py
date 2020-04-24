@@ -39,7 +39,7 @@ class SlackRouter:
     def get_response(self, channel_id):
         """Return a response."""
         self.logger.debug(u'Generating summary for channel: %s', channel_id)
-        return self.slack.channels.history(channel_id)
+        return self.slack.conversations.history(channel_id)
 
     def get_messages(self, channel_id, params):
         """Get messages based upon the interval."""
@@ -48,7 +48,7 @@ class SlackRouter:
         self.logger.debug(u'Earliest time %s', earliest_time)
         time_stamp = u'{}.999999'.format(earliest_time.strftime("%s"))
         self.logger.debug(u'Channel id %s, TS string %s', channel_id, time_stamp)
-        response = self.slack.channels.history(channel_id, oldest=time_stamp, count=999)
+        response = self.slack.conversations.history(channel_id, oldest=time_stamp, limit=999)
         res = (response.body)
         add_more = True
         msgs = []
@@ -57,7 +57,8 @@ class SlackRouter:
             if 'max_msgs' in params and params['max_msgs'] <= len(msgs):
                 return msgs
             if u'messages' in res:
-                new_set = {[msg['ts'] for msg in res['messages']]}
+                new_lol = [msg['ts'] for msg in res['messages']]
+                new_set = set(new_lol)
                 if new_set.intersection(msg_ids):
                     self.logger.debug(u'Overlap in messages')
                     return msgs
@@ -68,8 +69,8 @@ class SlackRouter:
                 return msgs
             if 'has_more' in res and res['has_more']:
                 self.logger.debug(u'Paging for more messages.')
-                response = self.slack.channels.history(channel_id, oldest=time_stamp, latest=res['messages'][-1]['ts'],
-                                                       count=999)
+                response = self.slack.conversations.history(channel_id, oldest=time_stamp,
+                                                            latest=res['messages'][-1]['ts'], limit=999)
                 res = (response.body)
             else:
                 self.logger.debug(u'No more messages.')

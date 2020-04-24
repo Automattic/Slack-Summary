@@ -9,6 +9,7 @@ LOG_FILE = 'summary.log'
 TEST_JSON = './data/test-events-elastic.json'
 CHANNELS = ['api-test', 'calypso', 'games', 'happiness', 'hg', 'jetpack',
             'jetpackfuel', 'livechat', 'tickets', 'vip']
+CHANNEL_IDS = {'vip': 'C029H6R8C', 'data-science': 'C5RPL6XBP', 'calypso': 'C02DQP0FP', 'elasticsearch': 'C02JQ08G0'}
 ROOT_PATH = os.getcwd()
 CONFIG_PATH = os.path.join(ROOT_PATH, 'configs')
 LOG_PATH = os.path.join(ROOT_PATH, 'logs')
