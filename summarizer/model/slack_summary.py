@@ -1,6 +1,4 @@
 """Provide the main summarization functionality."""
-import io
-import json
 import logging
 import logging.handlers
 import re
@@ -85,8 +83,7 @@ class SlackRouter:
         params = args['params'] if 'params' in args else None
         request_id = uuid.uuid1()
         if self.test:
-            with io.open(TEST_JSON, encoding='utf-8') as iot:
-                msgs = json.load(iot)[u'messages']
+            msgs = TEST_JSON
         else:
             msgs = self.get_messages(channel_id, params)
         summ_object = args['summ']

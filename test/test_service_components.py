@@ -3,16 +3,21 @@ import io
 import json
 import logging
 import logging.handlers
+import os
 import unittest
 
 from test.conftest import TEST_DATA_PATH
 import mock
 from mock import MagicMock
+import pytest
 from requests import Response
 
 import summarizer.app.main as main
 from summarizer.model.slack_summary import SlackRouter
 from summarizer.model.ts_config import DEBUG, LOG_FILE, CHANNEL_IDS
+
+_slack_connect_skip = pytest.mark.skipif('USE_SLACK_TOKEN' not in os.environ,  # pylint: disable=invalid-name
+                                         reason='No slack token available')
 
 
 class Test(unittest.TestCase):
@@ -49,6 +54,7 @@ class Test(unittest.TestCase):
         main._app.config['TESTING'] = True  # pylint: disable=protected-access
         self._app = main._app.test_client()  # pylint: disable=protected-access
 
+    @_slack_connect_skip
     @mock.patch('slacker.Slacker')
     def test_summary(self, mock_slack):
         """Test summary command."""
@@ -62,7 +68,7 @@ class Test(unittest.TestCase):
     def test_service(self, mock_slack):
         """Test basic request."""
         mock_slack.return_value.channels = self.channel_mock
-        response = self._app.post('/slack', data=dict(
+        response = self._app.post('/slacktest', data=dict(
             channel_id=CHANNEL_IDS['elasticsearch'],
             channel_name='elasticsearch',
             user_id='user123',
@@ -78,7 +84,7 @@ class Test(unittest.TestCase):
     def test_service_no_command(self, mock_slack):
         """Test if the right thing happens when no command is given."""
         mock_slack.return_value.channels = self.channel_mock2
-        response = self._app.post('/slack', data=dict(
+        response = self._app.post('/slacktest', data=dict(
             channel_id=CHANNEL_IDS['elasticsearch'],
             channel_name='elasticsearch',
             user_id='user123456',
@@ -94,7 +100,7 @@ class Test(unittest.TestCase):
     def test_service_no_text(self, mock_slack):
         "Test if no text field provided."
         mock_slack.return_value.channels = self.channel_mock2
-        response = self._app.post('/slack', data=dict(
+        response = self._app.post('/slacktest', data=dict(
             channel_id=CHANNEL_IDS['elasticsearch'],
             channel_name='elasticsearch',
             user_id='user123456',
@@ -109,7 +115,7 @@ class Test(unittest.TestCase):
     def test_service_bad_text(self, mock_slack):
         "Test is malformed text provided."
         mock_slack.return_value.channels = self.channel_mock2
-        response = self._app.post('/slack', data=dict(
+        response = self._app.post('/slacktest', data=dict(
             channel_id=CHANNEL_IDS['elasticsearch'],
             channel_name='elasticsearch',
             user_id='user123456',
@@ -125,7 +131,7 @@ class Test(unittest.TestCase):
     def test_service_bad_units(self, mock_slack):
         "Test if bad units."
         mock_slack.return_value.channels = self.channel_mock2
-        response = self._app.post('/slack', data=dict(
+        response = self._app.post('/slacktest', data=dict(
             channel_id=CHANNEL_IDS['elasticsearch'],
             channel_name='elasticsearch',
             user_id='user123456',
