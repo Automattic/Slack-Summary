@@ -77,6 +77,7 @@ class SlackRouter:
 
     def get_summary(self, **args):
         """Generate the summary."""
+        self.logger.info('Received input %s', args)
         channel_id = args['channel_id'] if 'channel_id' in args else None
         channel_name = args['channel_name'] if 'channel_name' in args else None
         user_id = args['user_id'] if 'user_id' in args else None
