@@ -12,11 +12,11 @@ from slacker import Slacker
 from summarizer.model.sp_summarizer import SpacyTsSummarizer
 from summarizer.model.ts_config import DEBUG, LOG_PATH, SLACK_ROUTER_LOG, TEST_JSON
 
-CONFIG_FILE = resource_filename(__name__, '../config.py')
+KEYS = {'slack': 'Nothing'}
+CONFIG_FILE = resource_filename(__name__, '../config.yaml')
 if os.path.exists(CONFIG_FILE):
-    KEYS = yaml.safe_load(CONFIG_FILE)
-else:
-    KEYS = {'slack': 'Nothing'}
+    with open(CONFIG_FILE) as configf:
+        KEYS = yaml.load(configf, Loader=yaml.FullLoader)
 
 
 class SlackRouter:
