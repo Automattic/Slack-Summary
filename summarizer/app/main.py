@@ -51,7 +51,6 @@ def process_slack_test_request():
 def _setup_logging(log_level):
     """Set up internal logging."""
     if not os.path.exists(LOG_PATH):
-        print('Starting the logging.')
         os.mkdir(LOG_PATH)
     dictConfig({
         'version': 1,

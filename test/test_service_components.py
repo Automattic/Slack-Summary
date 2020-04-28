@@ -6,7 +6,8 @@ import logging.handlers
 import os
 import unittest
 
-from test.conftest import TEST_DATA_PATH
+from test.conftest import TEST_DATA_PATH, TEST_LOG
+
 import mock
 from mock import MagicMock
 import pytest
@@ -14,7 +15,7 @@ from requests import Response
 
 import summarizer.app.main as main
 from summarizer.model.slack_summary import SlackRouter
-from summarizer.model.ts_config import DEBUG, LOG_FILE, CHANNEL_IDS
+from summarizer.model.ts_config import DEBUG, CHANNEL_IDS
 
 _slack_connect_skip = pytest.mark.skipif('USE_SLACK_TOKEN' not in os.environ,  # pylint: disable=invalid-name
                                          reason='No slack token available')
@@ -29,7 +30,7 @@ class Test(unittest.TestCase):
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         log_level = logging.DEBUG if DEBUG else logging.INFO
         self.logger = logging.getLogger(__name__)
-        self.filehandle = logging.handlers.RotatingFileHandler('./testing_' + LOG_FILE, mode='a',
+        self.filehandle = logging.handlers.RotatingFileHandler(TEST_LOG, mode='a',
                                                                encoding='utf-8', maxBytes=1000000, backupCount=5, )
         self.filehandle.setLevel(log_level)
         self.filehandle.setFormatter(formatter)

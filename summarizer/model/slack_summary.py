@@ -1,15 +1,22 @@
 """Provide the main summarization functionality."""
+import os
 import logging
 import logging.handlers
 import re
 import uuid
 from datetime import timedelta, datetime
+from pkg_resources import resource_filename
+import yaml
 
 from slacker import Slacker
-
-from summarizer.config import KEYS
 from summarizer.model.sp_summarizer import SpacyTsSummarizer
-from summarizer.model.ts_config import DEBUG, LOG_FILE, TEST_JSON
+from summarizer.model.ts_config import DEBUG, SLACK_ROUTER_LOG, TEST_JSON
+
+CONFIG_FILE = resource_filename(__name__, '../config.py')
+if os.path.exists(CONFIG_FILE):
+    KEYS = yaml.safe_load(CONFIG_FILE)
+else:
+    KEYS = {'slack': 'Nothing'}
 
 
 class SlackRouter:
@@ -25,7 +32,7 @@ class SlackRouter:
         self.slack = None if self.test else Slacker(KEYS['slack'])
         log_level = logging.DEBUG if DEBUG else logging.INFO
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        file_handler = logging.handlers.RotatingFileHandler('./slack_summary_' + LOG_FILE, mode='a', encoding='utf-8',
+        file_handler = logging.handlers.RotatingFileHandler(SLACK_ROUTER_LOG, mode='a', encoding='utf-8',
                                                             maxBytes=1000000, backupCount=5, )
         file_handler.setLevel(log_level)
         file_handler.setFormatter(formatter)

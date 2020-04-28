@@ -4,7 +4,7 @@ import logging.handlers
 import re
 from datetime import timedelta, datetime
 
-from summarizer.model.ts_config import TS_DEBUG, TS_LOG
+from summarizer.model.ts_config import TS_DEBUG, INTERVAL_LOG
 from summarizer.model.utils import get_msg_text
 
 logging.basicConfig(level=logging.INFO)
@@ -26,7 +26,7 @@ class TsSummarizer:
         self.slack = None
         log_level = logging.DEBUG if TS_DEBUG else logging.INFO
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        file_handler = logging.handlers.RotatingFileHandler('./interval_' + TS_LOG, mode='a',
+        file_handler = logging.handlers.RotatingFileHandler(INTERVAL_LOG, mode='a',
                                                             encoding='utf-8', maxBytes=1000000, backupCount=5)
         file_handler.setLevel(log_level)
         file_handler.setFormatter(formatter)

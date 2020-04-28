@@ -18,20 +18,21 @@ make clean check
 To test that it properly connects to Slack you can create a token at `https://api.slack.com/web` 
 
 
-Then edit the `summarizer/config.py` file, replacing the `<Your Token Here>` with your token
+Then create (or edit) a file named `summarizer/config.py` containing the line
 
 ```
 KEYS = {'slack': '<Your Token Here>'}
 ```
 
+replacing the `<Your Token Here>` line with your authentication token.
 
-Then edit `ts_config.py` file to adjust the debugging options
+Then edit the `summarizer/model/ts_config.py` file to adjust the debugging options
 
+```
      SUMMARY_INTERVALS = [{'days': 5, 'size': 2}, ]
-     TS_DEBUG = True
-     TS_LOG = "./ts_summ.log"
+     TS_DEBUG=True
      DEBUG=True
-     LOG_FILE="./summary.log"
+```
 
 Here the `LOG_FILE` stores where notices of users accessing the server is stored and the
 value of `DEBUG` determines if detailed logging is stored.
