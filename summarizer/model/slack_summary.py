@@ -10,7 +10,7 @@ import yaml
 
 from slacker import Slacker
 from summarizer.model.sp_summarizer import SpacyTsSummarizer
-from summarizer.model.ts_config import DEBUG, SLACK_ROUTER_LOG, TEST_JSON
+from summarizer.model.ts_config import DEBUG, LOG_PATH, SLACK_ROUTER_LOG, TEST_JSON
 
 CONFIG_FILE = resource_filename(__name__, '../config.py')
 if os.path.exists(CONFIG_FILE):
@@ -32,6 +32,8 @@ class SlackRouter:
         self.slack = None if self.test else Slacker(KEYS['slack'])
         log_level = logging.DEBUG if DEBUG else logging.INFO
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        if not os.path.exists(LOG_PATH):
+            os.mkdir(LOG_PATH)
         file_handler = logging.handlers.RotatingFileHandler(SLACK_ROUTER_LOG, mode='a', encoding='utf-8',
                                                             maxBytes=1000000, backupCount=5, )
         file_handler.setLevel(log_level)

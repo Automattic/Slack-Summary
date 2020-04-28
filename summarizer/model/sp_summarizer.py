@@ -1,6 +1,7 @@
 """Summarize using spacy."""
 
 import glob
+import os
 import io
 import json
 import logging
@@ -9,7 +10,7 @@ from datetime import time
 from typing import List, Dict, Any
 
 from summarizer.model.interval_summarizer import (TsSummarizer, canonicalize, ts_to_time, tspec_to_delta)
-from summarizer.model.ts_config import TS_DEBUG, SPACY_SUMMARIZER_LOG, TEMPORAL_VALUES
+from summarizer.model.ts_config import TS_DEBUG, LOG_PATH, SPACY_SUMMARIZER_LOG, TEMPORAL_VALUES
 from summarizer.model.utils import get_msg_text
 
 logging.basicConfig(level=logging.INFO)
@@ -23,6 +24,8 @@ class SpacyTsSummarizer(TsSummarizer):
         TsSummarizer.__init__(self, )
         log_level = logging.DEBUG if TS_DEBUG else logging.INFO
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        if not os.path.exists(LOG_PATH):
+            os.mkdir(LOG_PATH)
         file_handler = logging.handlers.RotatingFileHandler(SPACY_SUMMARIZER_LOG, mode='a',
                                                             encoding='utf-8', maxBytes=1000000, backupCount=5)
         file_handler.setLevel(log_level)

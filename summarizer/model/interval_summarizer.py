@@ -1,10 +1,11 @@
 """Summarize on a given interval."""
 import logging
 import logging.handlers
+import os
 import re
 from datetime import timedelta, datetime
 
-from summarizer.model.ts_config import TS_DEBUG, INTERVAL_LOG
+from summarizer.model.ts_config import TS_DEBUG, LOG_PATH, INTERVAL_LOG
 from summarizer.model.utils import get_msg_text
 
 logging.basicConfig(level=logging.INFO)
@@ -26,6 +27,8 @@ class TsSummarizer:
         self.slack = None
         log_level = logging.DEBUG if TS_DEBUG else logging.INFO
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        if not os.path.exists(LOG_PATH):
+            os.mkdir(LOG_PATH)
         file_handler = logging.handlers.RotatingFileHandler(INTERVAL_LOG, mode='a',
                                                             encoding='utf-8', maxBytes=1000000, backupCount=5)
         file_handler.setLevel(log_level)
